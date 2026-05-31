@@ -625,7 +625,7 @@ graph LR
 
 [![LinkedIn](https://img.shields.io/badge/LinkedIn-0077B5?style=for-the-badge&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/swarnamukhirchintalapudi)
 
-**Focus:** AI/ML Engineering | MLOps | ML Pipelines | LLMs
+**Focus:** AI/ML Engineering | Analytics Engineering | MLOps | ML Pipelines | LLMs
 
 ---
 ##  License
@@ -639,7 +639,5 @@ MIT License — feel free to use, adapt, and build on this project.
 **Built for production. Designed for impact. Ready for the portfolio.**
 
 If this helped you, please consider giving it a ⭐
-
-*ML Engineer · Data Engineer · MLOps Engineer · Analytics Engineer*
 
 </div>
