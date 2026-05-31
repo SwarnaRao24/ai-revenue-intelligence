@@ -625,7 +625,8 @@ graph LR
 
 [![LinkedIn](https://img.shields.io/badge/LinkedIn-0077B5?style=for-the-badge&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/swarnamukhirchintalapudi)
 
-**Focus:** Python | CI/CD | Docker | Web Development | UI/UX
+**Focus:** AI/ML Engineering | MLOps | ML Pipelines | LLMs
+
 ---
 ##  License
 
