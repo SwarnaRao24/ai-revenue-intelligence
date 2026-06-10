@@ -7,24 +7,24 @@ Runs at midnight, ingests Telco + E-Commerce data.
 from datetime import datetime, timedelta
 
 from airflow import DAG
-from airflow.operators.python import PythonOperator
 from airflow.operators.bash import BashOperator
+from airflow.operators.python import PythonOperator
 
 default_args = {
-    "owner":            "ml_platform",
-    "depends_on_past":  False,
-    "start_date":       datetime(2024, 1, 1),
+    "owner": "ml_platform",
+    "depends_on_past": False,
+    "start_date": datetime(2024, 1, 1),
     "email_on_failure": False,
-    "email_on_retry":   False,
-    "retries":          2,
-    "retry_delay":      timedelta(minutes=5),
+    "email_on_retry": False,
+    "retries": 2,
+    "retry_delay": timedelta(minutes=5),
 }
 
 dag = DAG(
     dag_id="data_ingestion_pipeline",
     default_args=default_args,
     description="Daily Bronze layer ingestion — Telco + E-Commerce",
-    schedule_interval="0 0 * * *",   # midnight daily
+    schedule_interval="0 0 * * *",  # midnight daily
     catchup=False,
     tags=["ingestion", "bronze", "daily"],
 )
@@ -34,8 +34,10 @@ def ingest_telco():
     """Download and save IBM Telco dataset to Bronze layer."""
     import sys
     from pathlib import Path
+
     sys.path.append(str(Path("/opt/airflow")))
     from data_ingestion.ingest_telco import run
+
     run()
 
 
@@ -43,21 +45,24 @@ def ingest_ecommerce():
     """Generate and save synthetic e-commerce data to Bronze layer."""
     import sys
     from pathlib import Path
+
     sys.path.append(str(Path("/opt/airflow")))
     from data_ingestion.ingest_ecommerce import run
+
     run()
 
 
 def validate_bronze():
     """Check Bronze layer files exist and have expected row counts."""
     from pathlib import Path
+
     import pandas as pd
 
     bronze_dir = Path("/opt/airflow/data/bronze")
     required = {
-        "bronze_telco_customers.parquet":     7000,
-        "bronze_ecommerce_orders.parquet":    10000,
-        "bronze_support_tickets.parquet":     2000,
+        "bronze_telco_customers.parquet": 7000,
+        "bronze_ecommerce_orders.parquet": 10000,
+        "bronze_support_tickets.parquet": 2000,
     }
     for filename, min_rows in required.items():
         path = bronze_dir / filename

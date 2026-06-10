@@ -26,8 +26,7 @@ from ml_training.utils.mlflow_utils import (
 )
 
 logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s | %(levelname)s | %(message)s"
+    level=logging.INFO, format="%(asctime)s | %(levelname)s | %(message)s"
 )
 logger = logging.getLogger(__name__)
 
@@ -37,10 +36,10 @@ EXPERIMENT_NAME = "revenue_forecasting"
 def generate_revenue_data(n_months: int = 54) -> pd.DataFrame:
     """Synthetic monthly revenue with trend + seasonality."""
     rng = np.random.default_rng(42)
-    dates   = pd.date_range("2020-01-01", periods=n_months, freq="MS")
-    trend   = np.linspace(50_000, 130_000, n_months)
-    season  = 9_000 * np.sin(2 * np.pi * np.arange(n_months) / 12)
-    noise   = rng.normal(0, 3_000, n_months)
+    dates = pd.date_range("2020-01-01", periods=n_months, freq="MS")
+    trend = np.linspace(50_000, 130_000, n_months)
+    season = 9_000 * np.sin(2 * np.pi * np.arange(n_months) / 12)
+    noise = rng.normal(0, 3_000, n_months)
     revenue = (trend + season + noise).clip(min=0).round(2)
     return pd.DataFrame({"ds": dates, "y": revenue})
 
@@ -49,9 +48,9 @@ def build_time_features(df: pd.DataFrame) -> pd.DataFrame:
     """Add lag, rolling, and calendar features."""
     df = df.copy().sort_values("ds").reset_index(drop=True)
 
-    df["month"]   = df["ds"].dt.month
+    df["month"] = df["ds"].dt.month
     df["quarter"] = df["ds"].dt.quarter
-    df["year"]    = df["ds"].dt.year
+    df["year"] = df["ds"].dt.year
     df["month_sin"] = np.sin(2 * np.pi * df["month"] / 12)
     df["month_cos"] = np.cos(2 * np.pi * df["month"] / 12)
 
@@ -60,8 +59,8 @@ def build_time_features(df: pd.DataFrame) -> pd.DataFrame:
 
     for window in [3, 6]:
         df[f"rolling_mean_{window}"] = df["y"].shift(1).rolling(window).mean()
-        df[f"rolling_std_{window}"]  = df["y"].shift(1).rolling(window).std()
-        df[f"rolling_max_{window}"]  = df["y"].shift(1).rolling(window).max()
+        df[f"rolling_std_{window}"] = df["y"].shift(1).rolling(window).std()
+        df[f"rolling_max_{window}"] = df["y"].shift(1).rolling(window).max()
 
     return df.dropna().reset_index(drop=True)
 
@@ -72,7 +71,7 @@ def train():
     logger.info("=" * 55)
 
     # 1. Data
-    df_raw  = generate_revenue_data(54)
+    df_raw = generate_revenue_data(54)
     df_feat = build_time_features(df_raw)
     feature_cols = [c for c in df_feat.columns if c not in ["ds", "y"]]
 
@@ -92,41 +91,44 @@ def train():
 
     with mlflow.start_run(run_name=run_name):
         params = {
-            "n_estimators":  200,
-            "max_depth":     4,
+            "n_estimators": 200,
+            "max_depth": 4,
             "learning_rate": 0.05,
-            "subsample":     0.8,
-            "random_state":  42,
-            "n_jobs":        -1,
-            "verbosity":     0,
+            "subsample": 0.8,
+            "random_state": 42,
+            "n_jobs": -1,
+            "verbosity": 0,
         }
         log_model_params(params)
 
         model = xgb.XGBRegressor(**params)
         model.fit(
-            X_train, y_train,
+            X_train,
+            y_train,
             eval_set=[(X_test, y_test)],
             verbose=False,
         )
 
         y_pred = model.predict(X_test)
-        mape   = mean_absolute_percentage_error(y_test, y_pred)
-        rmse   = np.sqrt(mean_squared_error(y_test, y_pred))
-        mae    = np.mean(np.abs(y_test - y_pred))
+        mape = mean_absolute_percentage_error(y_test, y_pred)
+        rmse = np.sqrt(mean_squared_error(y_test, y_pred))
+        mae = np.mean(np.abs(y_test - y_pred))
 
         log_model_metrics({"mape": mape, "rmse": rmse, "mae": mae})
 
         # Show predictions vs actuals
-        comparison = pd.DataFrame({
-            "actual":    y_test.values.round(0),
-            "predicted": y_pred.round(0),
-            "error_pct": ((y_pred - y_test.values) / y_test.values * 100).round(1),
-        })
+        comparison = pd.DataFrame(
+            {
+                "actual": y_test.values.round(0),
+                "predicted": y_pred.round(0),
+                "error_pct": ((y_pred - y_test.values) / y_test.values * 100).round(1),
+            }
+        )
         logger.info(f"\nPredictions vs Actuals:\n{comparison.to_string(index=False)}")
 
         # Save
         Path("models").mkdir(exist_ok=True)
-        joblib.dump(model,        "models/revenue_model.pkl")
+        joblib.dump(model, "models/revenue_model.pkl")
         joblib.dump(feature_cols, "models/revenue_feature_cols.pkl")
         mlflow.sklearn.log_model(model, "model")
 

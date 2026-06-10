@@ -7,23 +7,23 @@ Runs every Sunday at 2am — retrains all 4 models.
 from datetime import datetime, timedelta
 
 from airflow import DAG
-from airflow.operators.python import PythonOperator
 from airflow.operators.bash import BashOperator
+from airflow.operators.python import PythonOperator
 
 default_args = {
-    "owner":            "ml_platform",
-    "depends_on_past":  False,
-    "start_date":       datetime(2024, 1, 1),
+    "owner": "ml_platform",
+    "depends_on_past": False,
+    "start_date": datetime(2024, 1, 1),
     "email_on_failure": False,
-    "retries":          1,
-    "retry_delay":      timedelta(minutes=10),
+    "retries": 1,
+    "retry_delay": timedelta(minutes=10),
 }
 
 dag = DAG(
     dag_id="ml_retraining_pipeline",
     default_args=default_args,
     description="Weekly ML model retraining — all 4 models",
-    schedule_interval="0 2 * * 0",   # 2am every Sunday
+    schedule_interval="0 2 * * 0",  # 2am every Sunday
     catchup=False,
     tags=["training", "ml", "weekly"],
 )
@@ -33,8 +33,10 @@ def _import_and_train(module_path: str, fn_name: str = "train"):
     """Dynamically import and run a training function."""
     import sys
     from pathlib import Path
+
     sys.path.append(str(Path("/opt/airflow")))
     import importlib
+
     mod = importlib.import_module(module_path)
     getattr(mod, fn_name)()
 
@@ -58,6 +60,7 @@ def train_anomaly():
 def validate_models():
     """Confirm all model files were saved after retraining."""
     from pathlib import Path
+
     import joblib
 
     required = [

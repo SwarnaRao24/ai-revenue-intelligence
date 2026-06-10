@@ -5,19 +5,18 @@ Generates synthetic e-commerce + support ticket data → Bronze layer.
 """
 
 import logging
-from pathlib import Path
 from datetime import datetime
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
-from faker import Faker
 from dotenv import load_dotenv
+from faker import Faker
 
 load_dotenv()
 
 logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s | %(levelname)s | %(message)s"
+    level=logging.INFO, format="%(asctime)s | %(levelname)s | %(message)s"
 )
 logger = logging.getLogger(__name__)
 
@@ -28,17 +27,19 @@ N_CUSTOMERS = 5000
 
 def generate_customers(rng, fake, n: int) -> pd.DataFrame:
     logger.info(f"Generating {n:,} customers...")
-    return pd.DataFrame({
-        "customer_id":    [f"CUST_{i:06d}" for i in range(n)],
-        "customer_name":  [fake.name() for _ in range(n)],
-        "customer_email": [fake.email() for _ in range(n)],
-        "city":           [fake.city() for _ in range(n)],
-        "state":          [fake.state_abbr() for _ in range(n)],
-        "signup_date":    pd.date_range("2020-01-01", periods=n, freq="1h")[:n],
-        "_ingested_at":   datetime.utcnow().isoformat(),
-        "_source":        "synthetic_ecommerce",
-        "_batch_id":      datetime.utcnow().strftime("%Y%m%d_%H%M%S"),
-    })
+    return pd.DataFrame(
+        {
+            "customer_id": [f"CUST_{i:06d}" for i in range(n)],
+            "customer_name": [fake.name() for _ in range(n)],
+            "customer_email": [fake.email() for _ in range(n)],
+            "city": [fake.city() for _ in range(n)],
+            "state": [fake.state_abbr() for _ in range(n)],
+            "signup_date": pd.date_range("2020-01-01", periods=n, freq="1h")[:n],
+            "_ingested_at": datetime.utcnow().isoformat(),
+            "_source": "synthetic_ecommerce",
+            "_batch_id": datetime.utcnow().strftime("%Y%m%d_%H%M%S"),
+        }
+    )
 
 
 def generate_orders(rng, customers: pd.DataFrame) -> pd.DataFrame:
@@ -47,54 +48,54 @@ def generate_orders(rng, customers: pd.DataFrame) -> pd.DataFrame:
 
     customer_ids = rng.choice(customers["customer_id"].values, size=n_orders)
     order_dates = pd.to_datetime(
-        rng.choice(
-            pd.date_range("2020-01-01", "2024-06-01", freq="D"),
-            size=n_orders
-        )
+        rng.choice(pd.date_range("2020-01-01", "2024-06-01", freq="D"), size=n_orders)
     )
 
-    return pd.DataFrame({
-        "order_id":       [f"ORD_{i:08d}" for i in range(n_orders)],
-        "customer_id":    customer_ids,
-        "order_date":     order_dates,
-        "order_status":   rng.choice(
-            ["delivered", "shipped", "cancelled", "processing"],
-            size=n_orders,
-            p=[0.75, 0.12, 0.08, 0.05]
-        ),
-        "payment_value":  rng.lognormal(mean=4.0, sigma=0.8, size=n_orders).round(2),
-        "freight_value":  rng.exponential(scale=15, size=n_orders).round(2),
-        "_ingested_at":   datetime.utcnow().isoformat(),
-        "_source":        "synthetic_ecommerce",
-    })
+    return pd.DataFrame(
+        {
+            "order_id": [f"ORD_{i:08d}" for i in range(n_orders)],
+            "customer_id": customer_ids,
+            "order_date": order_dates,
+            "order_status": rng.choice(
+                ["delivered", "shipped", "cancelled", "processing"],
+                size=n_orders,
+                p=[0.75, 0.12, 0.08, 0.05],
+            ),
+            "payment_value": rng.lognormal(mean=4.0, sigma=0.8, size=n_orders).round(2),
+            "freight_value": rng.exponential(scale=15, size=n_orders).round(2),
+            "_ingested_at": datetime.utcnow().isoformat(),
+            "_source": "synthetic_ecommerce",
+        }
+    )
 
 
 def generate_support_tickets(rng, customers: pd.DataFrame) -> pd.DataFrame:
     n_tickets = len(customers) // 2
     logger.info(f"Generating {n_tickets:,} support tickets...")
 
-    return pd.DataFrame({
-        "ticket_id":   [f"TKT_{i:06d}" for i in range(n_tickets)],
-        "customer_id": rng.choice(customers["customer_id"].values, size=n_tickets),
-        "created_at":  pd.to_datetime(
-            rng.choice(
-                pd.date_range("2020-01-01", "2024-06-01", freq="D"),
-                size=n_tickets
-            )
-        ),
-        "category":    rng.choice(
-            ["billing", "technical", "shipping", "product", "account"],
-            size=n_tickets
-        ),
-        "sentiment":   rng.choice(
-            ["positive", "neutral", "negative"],
-            size=n_tickets,
-            p=[0.20, 0.50, 0.30]
-        ),
-        "resolved":    rng.choice([True, False], size=n_tickets, p=[0.80, 0.20]),
-        "_ingested_at": datetime.utcnow().isoformat(),
-        "_source":      "synthetic_ecommerce",
-    })
+    return pd.DataFrame(
+        {
+            "ticket_id": [f"TKT_{i:06d}" for i in range(n_tickets)],
+            "customer_id": rng.choice(customers["customer_id"].values, size=n_tickets),
+            "created_at": pd.to_datetime(
+                rng.choice(
+                    pd.date_range("2020-01-01", "2024-06-01", freq="D"), size=n_tickets
+                )
+            ),
+            "category": rng.choice(
+                ["billing", "technical", "shipping", "product", "account"],
+                size=n_tickets,
+            ),
+            "sentiment": rng.choice(
+                ["positive", "neutral", "negative"],
+                size=n_tickets,
+                p=[0.20, 0.50, 0.30],
+            ),
+            "resolved": rng.choice([True, False], size=n_tickets, p=[0.80, 0.20]),
+            "_ingested_at": datetime.utcnow().isoformat(),
+            "_source": "synthetic_ecommerce",
+        }
+    )
 
 
 def run():

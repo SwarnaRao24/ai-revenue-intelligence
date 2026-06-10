@@ -26,8 +26,7 @@ from ml_training.utils.mlflow_utils import (
 )
 
 logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s | %(levelname)s | %(message)s"
+    level=logging.INFO, format="%(asctime)s | %(levelname)s | %(message)s"
 )
 logger = logging.getLogger(__name__)
 
@@ -42,10 +41,16 @@ SEGMENT_LABELS = {
 }
 
 RFM_FEATURES = [
-    "tenure_months", "monthly_charges", "total_charges",
-    "lifetime_value", "avg_order_value", "total_orders",
-    "active_months_6mo", "total_revenue_6mo",
-    "total_support_tickets", "services_count",
+    "tenure_months",
+    "monthly_charges",
+    "total_charges",
+    "lifetime_value",
+    "avg_order_value",
+    "total_orders",
+    "active_months_6mo",
+    "total_revenue_6mo",
+    "total_support_tickets",
+    "services_count",
 ]
 
 
@@ -81,7 +86,7 @@ def train():
             logger.info(f"  k={k} → silhouette={score:.4f}")
             if score > best_score:
                 best_score = score
-                best_k     = k
+                best_k = k
 
         logger.info(f"Best k={best_k} (silhouette={best_score:.4f})")
 
@@ -91,26 +96,26 @@ def train():
         labels = model.labels_
         final_score = silhouette_score(X_scaled, labels)
 
-        log_model_params({
-            "n_clusters": best_k,
-            "features":   str(features),
-            "n_samples":  len(df),
-        })
-        log_model_metrics({
-            "silhouette_score": final_score,
-            "n_clusters":       best_k,
-        })
+        log_model_params(
+            {
+                "n_clusters": best_k,
+                "features": str(features),
+                "n_samples": len(df),
+            }
+        )
+        log_model_metrics(
+            {
+                "silhouette_score": final_score,
+                "n_clusters": best_k,
+            }
+        )
 
         # 5. Segment profile
-        df["segment_id"]   = labels
+        df["segment_id"] = labels
         df["segment_name"] = df["segment_id"].map(
             {i: SEGMENT_LABELS.get(i, f"Segment_{i}") for i in range(best_k)}
         )
-        profile = (
-            df.groupby("segment_name")[features]
-            .mean()
-            .round(1)
-        )
+        profile = df.groupby("segment_name")[features].mean().round(1)
         logger.info(f"\nSegment Profiles:\n{profile.to_string()}")
 
         counts = df["segment_name"].value_counts()
@@ -118,8 +123,8 @@ def train():
 
         # 6. Save
         Path("models").mkdir(exist_ok=True)
-        joblib.dump(model,    "models/segmentation_model.pkl")
-        joblib.dump(scaler,   "models/segmentation_scaler.pkl")
+        joblib.dump(model, "models/segmentation_model.pkl")
+        joblib.dump(scaler, "models/segmentation_scaler.pkl")
         joblib.dump(features, "models/segmentation_feature_cols.pkl")
         mlflow.sklearn.log_model(model, "model")
 

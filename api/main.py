@@ -30,6 +30,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 # ── Startup ───────────────────────────────────────────────────
 @app.on_event("startup")
 async def startup_event():
@@ -40,9 +41,9 @@ async def startup_event():
 @app.get("/health", tags=["Health"])
 async def health():
     return {
-        "status":  "healthy",
+        "status": "healthy",
         "version": "1.0.0",
-        "models":  "loaded",
+        "models": "loaded",
     }
 
 
@@ -51,9 +52,10 @@ async def health():
 async def root():
     return {
         "message": "Churn & Revenue Intelligence API",
-        "docs":    "/docs",
-        "health":  "/health",
+        "docs": "/docs",
+        "health": "/health",
     }
+
 
 # ── Include routers ───────────────────────────────────────────
 app.include_router(predict_router)

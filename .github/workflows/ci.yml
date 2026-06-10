@@ -24,14 +24,17 @@ jobs:
         run: pip install black flake8 isort
 
       - name: Black format check
-        run: black . --check --line-length 88
+        run: black . --check --line-length 88 --exclude="dbt_project/|\.venv"
 
       - name: isort check
-        run: isort . --check-only --profile black
+        run: isort . --check-only --profile black --skip dbt_project
 
       - name: Flake8 lint
-        run: flake8 . --max-line-length 88
-             --exclude=.venv,__pycache__,dbt_project/target
+        run: |
+          flake8 . \
+            --max-line-length 88 \
+            --exclude=.venv,__pycache__,dbt_project/target,dbt_project/dbt_packages \
+            --extend-ignore=E501,W503,E203
 
   # ── Test ────────────────────────────────────────────────────
   test:

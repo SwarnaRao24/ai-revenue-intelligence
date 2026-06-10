@@ -25,18 +25,22 @@ from ml_training.utils.mlflow_utils import (
 )
 
 logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s | %(levelname)s | %(message)s"
+    level=logging.INFO, format="%(asctime)s | %(levelname)s | %(message)s"
 )
 logger = logging.getLogger(__name__)
 
 EXPERIMENT_NAME = "anomaly_detection"
 
 ANOMALY_FEATURES = [
-    "monthly_charges", "total_charges",
-    "total_support_tickets", "negative_support_tickets",
-    "total_cancellations_6mo", "revenue_volatility_6mo",
-    "charge_gap", "tickets_last_6mo", "negative_ticket_ratio",
+    "monthly_charges",
+    "total_charges",
+    "total_support_tickets",
+    "negative_support_tickets",
+    "total_cancellations_6mo",
+    "revenue_volatility_6mo",
+    "charge_gap",
+    "tickets_last_6mo",
+    "negative_ticket_ratio",
 ]
 
 
@@ -60,46 +64,51 @@ def train():
 
     with mlflow.start_run(run_name=run_name):
         params = {
-            "n_estimators":  100,
+            "n_estimators": 100,
             "contamination": 0.05,
-            "random_state":  42,
-            "n_jobs":        -1,
+            "random_state": 42,
+            "n_jobs": -1,
         }
         log_model_params(params)
 
         model = IsolationForest(**params)
         model.fit(X_scaled)
 
-        scores      = model.decision_function(X_scaled)
-        predictions = model.predict(X_scaled)           # -1 = anomaly, 1 = normal
+        scores = model.decision_function(X_scaled)
+        predictions = model.predict(X_scaled)  # -1 = anomaly, 1 = normal
         n_anomalies = int((predictions == -1).sum())
         anomaly_rate = n_anomalies / len(predictions)
 
-        log_model_metrics({
-            "n_anomalies":  n_anomalies,
-            "anomaly_rate": anomaly_rate,
-            "n_samples":    len(df),
-            "score_mean":   float(scores.mean()),
-            "score_std":    float(scores.std()),
-        })
+        log_model_metrics(
+            {
+                "n_anomalies": n_anomalies,
+                "anomaly_rate": anomaly_rate,
+                "n_samples": len(df),
+                "score_mean": float(scores.mean()),
+                "score_std": float(scores.std()),
+            }
+        )
 
         # Show top anomalies
         df["anomaly_score"] = scores
-        df["is_anomaly"]    = (predictions == -1).astype(int)
-        top_anomalies = (
-            df[df["is_anomaly"] == 1]
-            .nsmallest(10, "anomaly_score")[
-                ["customer_id", "anomaly_score",
-                 "monthly_charges", "total_support_tickets",
-                 "negative_support_tickets"]
+        df["is_anomaly"] = (predictions == -1).astype(int)
+        top_anomalies = df[df["is_anomaly"] == 1].nsmallest(10, "anomaly_score")[
+            [
+                "customer_id",
+                "anomaly_score",
+                "monthly_charges",
+                "total_support_tickets",
+                "negative_support_tickets",
             ]
+        ]
+        logger.info(
+            f"\nTop 10 Anomalous Customers:\n{top_anomalies.to_string(index=False)}"
         )
-        logger.info(f"\nTop 10 Anomalous Customers:\n{top_anomalies.to_string(index=False)}")
 
         # Save
         Path("models").mkdir(exist_ok=True)
-        joblib.dump(model,    "models/anomaly_model.pkl")
-        joblib.dump(scaler,   "models/anomaly_scaler.pkl")
+        joblib.dump(model, "models/anomaly_model.pkl")
+        joblib.dump(scaler, "models/anomaly_scaler.pkl")
         joblib.dump(features, "models/anomaly_feature_cols.pkl")
         mlflow.sklearn.log_model(model, "model")
 

@@ -56,9 +56,7 @@ def log_model_metrics(metrics: dict[str, float]) -> None:
             mlflow.log_metric(key, float(value))
         except Exception:
             pass
-    logger.info(
-        "Metrics: " + " | ".join(f"{k}={v:.4f}" for k, v in metrics.items())
-    )
+    logger.info("Metrics: " + " | ".join(f"{k}={v:.4f}" for k, v in metrics.items()))
 
 
 def log_model_params(params: dict[str, Any]) -> None:

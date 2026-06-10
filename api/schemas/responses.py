@@ -4,20 +4,21 @@ Pydantic response models for all endpoints.
 """
 
 from typing import Any
+
 from pydantic import BaseModel
 
 
 class FeatureImpact(BaseModel):
     feature: str
     impact: float
-    direction: str   # "increases" or "decreases"
+    direction: str  # "increases" or "decreases"
 
 
 class ChurnResponse(BaseModel):
     customer_id: str
     churn_probability: float
     churn_prediction: bool
-    risk_tier: str           # HIGH / MEDIUM / LOW
+    risk_tier: str  # HIGH / MEDIUM / LOW
     top_factors: list[FeatureImpact]
     recommendation: str
     model_version: str
@@ -35,7 +36,7 @@ class RevenueResponse(BaseModel):
     granularity: str
     forecast: list[RevenueForecastPoint]
     total_forecast: float
-    trend: str               # "growing" / "stable" / "declining"
+    trend: str  # "growing" / "stable" / "declining"
     message: str
 
 

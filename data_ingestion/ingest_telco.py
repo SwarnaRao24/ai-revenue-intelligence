@@ -5,8 +5,8 @@ Downloads IBM Telco Customer Churn dataset and saves to local Bronze layer.
 
 import io
 import logging
-from pathlib import Path
 from datetime import datetime
+from pathlib import Path
 
 import pandas as pd
 import requests
@@ -15,8 +15,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s | %(levelname)s | %(message)s"
+    level=logging.INFO, format="%(asctime)s | %(levelname)s | %(message)s"
 )
 logger = logging.getLogger(__name__)
 
@@ -53,10 +52,7 @@ def clean_telco_data(df: pd.DataFrame) -> pd.DataFrame:
     df = df.copy()
 
     # Standardize column names to snake_case
-    df.columns = [
-        c.lower().replace(" ", "_").replace("-", "_")
-        for c in df.columns
-    ]
+    df.columns = [c.lower().replace(" ", "_").replace("-", "_") for c in df.columns]
 
     # Fix TotalCharges — blank for brand new customers
     df["totalcharges"] = pd.to_numeric(df["totalcharges"], errors="coerce")
