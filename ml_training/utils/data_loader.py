@@ -132,6 +132,10 @@ def _engineer_churn_features(df: pd.DataFrame) -> pd.DataFrame:
         feat["lifetime_value"].replace(0, np.nan)
     ).fillna(0).round(4)
 
+    feat["contract_type"] = df["contract"].fillna("Month-to-month")
+    feat["payment_method"] = df["paymentmethod"].fillna("Electronic check")
+    feat["internet_service"] = df["internetservice"].fillna("No")
+
     return feat.fillna(0)
 
 
@@ -143,63 +147,100 @@ def _generate_synthetic_churn_features(n: int = 7043) -> pd.DataFrame:
     label[:n_churn] = 1
     rng.shuffle(label)
 
-    tenure = rng.integers(1, 72, size=n)
+    tenure  = rng.integers(1, 72, size=n)
     monthly = rng.uniform(18, 118, size=n).round(2)
 
+    # ── Derive contract_type from binary flags ─────────────────
+    contract_choices = rng.choice(
+        ["Month-to-month", "One year", "Two year"],
+        size=n,
+        p=[0.55, 0.21, 0.24]
+    )
+    payment_choices = rng.choice(
+        ["Electronic check", "Mailed check",
+         "Bank transfer (automatic)", "Credit card (automatic)"],
+        size=n,
+        p=[0.34, 0.23, 0.22, 0.21]
+    )
+    internet_choices = rng.choice(
+        ["Fiber optic", "DSL", "No"],
+        size=n,
+        p=[0.44, 0.34, 0.22]
+    )
+
     df = pd.DataFrame({
-        "customer_id":            [f"CUST_{i:06d}" for i in range(n)],
-        "label":                  label,
-        "is_male":                rng.integers(0, 2, size=n),
-        "is_senior_citizen":      rng.choice([0, 1], size=n, p=[0.84, 0.16]),
-        "has_partner":            rng.integers(0, 2, size=n),
-        "has_dependents":         rng.choice([0, 1], size=n, p=[0.70, 0.30]),
-        "tenure_months":          tenure,
-        "monthly_charges":        monthly,
-        "total_charges":          (tenure * monthly).round(2),
-        "implied_tenure":         tenure + rng.integers(-2, 3, size=n),
-        "is_monthly_contract":    rng.choice([0, 1], size=n, p=[0.45, 0.55]),
-        "is_annual_contract":     rng.choice([0, 1], size=n, p=[0.79, 0.21]),
-        "is_biannual_contract":   rng.choice([0, 1], size=n, p=[0.83, 0.17]),
-        "uses_electronic_check":  rng.choice([0, 1], size=n, p=[0.67, 0.33]),
-        "has_paperless_billing":  rng.integers(0, 2, size=n),
-        "has_fiber_optic":        rng.choice([0, 1], size=n, p=[0.56, 0.44]),
-        "has_dsl":                rng.choice([0, 1], size=n, p=[0.79, 0.21]),
-        "no_internet":            rng.choice([0, 1], size=n, p=[0.79, 0.21]),
-        "has_online_security":    rng.integers(0, 2, size=n),
-        "has_tech_support":       rng.integers(0, 2, size=n),
-        "has_phone":              rng.choice([0, 1], size=n, p=[0.10, 0.90]),
-        "has_multiple_lines":     rng.integers(0, 2, size=n),
-        "has_online_backup":      rng.integers(0, 2, size=n),
-        "has_device_protect":     rng.integers(0, 2, size=n),
-        "has_streaming_tv":       rng.integers(0, 2, size=n),
-        "has_streaming_movies":   rng.integers(0, 2, size=n),
-        "is_new_customer":        (tenure < 12).astype(int),
-        "is_long_tenure":         (tenure > 48).astype(int),
-        "charge_gap":             rng.uniform(-100, 100, size=n).round(2),
-        "services_count":         rng.integers(0, 6, size=n),
-        "is_high_value":          (monthly > 70).astype(int),
-        "is_at_risk":             rng.choice([0, 1], size=n, p=[0.70, 0.30]),
-        "total_support_tickets":  rng.integers(0, 8, size=n),
+        "customer_id":              [f"CUST_{i:06d}" for i in range(n)],
+        "label":                    label,
+        "is_male":                  rng.integers(0, 2, size=n),
+        "is_senior_citizen":        rng.choice([0, 1], size=n, p=[0.84, 0.16]),
+        "has_partner":              rng.integers(0, 2, size=n),
+        "has_dependents":           rng.choice([0, 1], size=n, p=[0.70, 0.30]),
+        "tenure_months":            tenure,
+        "monthly_charges":          monthly,
+        "total_charges":            (tenure * monthly).round(2),
+        "implied_tenure":           tenure + rng.integers(-2, 3, size=n),
+        "is_monthly_contract":      rng.choice([0, 1], size=n, p=[0.45, 0.55]),
+        "is_annual_contract":       rng.choice([0, 1], size=n, p=[0.79, 0.21]),
+        "is_biannual_contract":     rng.choice([0, 1], size=n, p=[0.83, 0.17]),
+        "uses_electronic_check":    rng.choice([0, 1], size=n, p=[0.67, 0.33]),
+        "has_paperless_billing":    rng.integers(0, 2, size=n),
+        "has_fiber_optic":          rng.choice([0, 1], size=n, p=[0.56, 0.44]),
+        "has_dsl":                  rng.choice([0, 1], size=n, p=[0.79, 0.21]),
+        "no_internet":              rng.choice([0, 1], size=n, p=[0.79, 0.21]),
+        "has_online_security":      rng.integers(0, 2, size=n),
+        "has_tech_support":         rng.integers(0, 2, size=n),
+        "has_phone":                rng.choice([0, 1], size=n, p=[0.10, 0.90]),
+        "has_multiple_lines":       rng.integers(0, 2, size=n),
+        "has_online_backup":        rng.integers(0, 2, size=n),
+        "has_device_protect":       rng.integers(0, 2, size=n),
+        "has_streaming_tv":         rng.integers(0, 2, size=n),
+        "has_streaming_movies":     rng.integers(0, 2, size=n),
+        "is_new_customer":          (tenure < 12).astype(int),
+        "is_long_tenure":           (tenure > 48).astype(int),
+        "charge_gap":               rng.uniform(-100, 100, size=n).round(2),
+        "services_count":           rng.integers(0, 6, size=n),
+        "is_high_value":            (monthly > 70).astype(int),
+        "is_at_risk":               rng.choice([0, 1], size=n, p=[0.70, 0.30]),
+        "total_support_tickets":    rng.integers(0, 8, size=n),
         "negative_support_tickets": rng.integers(0, 4, size=n),
-        "tickets_last_6mo":       rng.integers(0, 5, size=n),
-        "total_orders_6mo":       rng.integers(0, 20, size=n),
-        "total_revenue_6mo":      rng.uniform(0, 800, size=n).round(2),
-        "avg_monthly_revenue_6mo": rng.uniform(0, 150, size=n).round(2),
-        "revenue_volatility_6mo": rng.uniform(0, 40, size=n).round(2),
-        "total_cancellations_6mo": rng.integers(0, 4, size=n),
-        "active_months_6mo":      rng.integers(1, 7, size=n),
-        "lifetime_value":         rng.lognormal(6.5, 1.0, size=n).round(2),
-        "avg_order_value":        rng.uniform(20, 180, size=n).round(2),
-        "total_orders":           rng.integers(1, 40, size=n),
-        "negative_ticket_ratio":  rng.uniform(0, 1, size=n).round(3),
-        "charge_to_ltv_ratio":    rng.uniform(0, 0.5, size=n).round(4),
+        "tickets_last_6mo":         rng.integers(0, 5, size=n),
+        "total_orders_6mo":         rng.integers(0, 20, size=n),
+        "total_revenue_6mo":        rng.uniform(0, 800, size=n).round(2),
+        "avg_monthly_revenue_6mo":  rng.uniform(0, 150, size=n).round(2),
+        "revenue_volatility_6mo":   rng.uniform(0, 40, size=n).round(2),
+        "total_cancellations_6mo":  rng.integers(0, 4, size=n),
+        "active_months_6mo":        rng.integers(1, 7, size=n),
+        "lifetime_value":           rng.lognormal(6.5, 1.0, size=n).round(2),
+        "avg_order_value":          rng.uniform(20, 180, size=n).round(2),
+        "total_orders":             rng.integers(1, 40, size=n),
+        "negative_ticket_ratio":    rng.uniform(0, 1, size=n).round(3),
+        "charge_to_ltv_ratio":      rng.uniform(0, 0.5, size=n).round(4),
+
+        # ── Categorical columns needed by dashboard ────────────
+        "contract_type":    contract_choices,
+        "payment_method":   payment_choices,
+        "internet_service": internet_choices,
+
+        # ── Segment for segmentation page ─────────────────────
+        "segment": rng.choice(
+            ["Champions", "Loyal Customers", "At Risk",
+             "Hibernating", "Lost"],
+            size=n,
+            p=[0.20, 0.25, 0.25, 0.18, 0.12]
+        ),
     })
 
-    # inject realistic churn signal
+    # ── Inject realistic churn signal ─────────────────────────
     churn = df["label"] == 1
-    df.loc[churn, "is_monthly_contract"] = 1
-    df.loc[churn, "tenure_months"]       = rng.integers(1, 24, size=churn.sum())
-    df.loc[churn, "negative_support_tickets"] = rng.integers(2, 6, size=churn.sum())
-    df.loc[churn, "has_tech_support"]    = 0
+    df.loc[churn, "is_monthly_contract"]      = 1
+    df.loc[churn, "contract_type"]            = "Month-to-month"
+    df.loc[churn, "tenure_months"]            = rng.integers(1, 24, size=churn.sum())
+    df.loc[churn, "negative_support_tickets"] = rng.integers(2, 6,  size=churn.sum())
+    df.loc[churn, "has_tech_support"]         = 0
+    df.loc[churn, "internet_service"]         = rng.choice(
+        ["Fiber optic", "DSL"],
+        size=churn.sum(),
+        p=[0.75, 0.25]
+    )
 
     return df
